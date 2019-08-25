@@ -1,0 +1,42 @@
+---
+- name: Performing Environmental yum cleanup
+  command: yum clean all
+- name: Performing enviromental repo check
+  command: yum list telnet
+  register: result
+- debug: msg="{{result.stdout}}"
+- name: Installing Mariadb for RHEL7
+  yum: 
+    name: "{{ item }}"
+    state: latest
+  with_items:
+     - mariadb
+     - mariadb-server
+  when: "ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'"
+   
+- name: Installing MySql for RHEL6
+  yum: 
+    name: "{{ item }}"
+    state: latest
+  with_items:
+     - mysql
+     - mysql-server
+     - libselinux-python
+  when: "ansible_os_family == 'RedHat' and ansible_distribution_major_version == '6'"
+  
+- name: Configuring Database parameters
+  copy: src=7my.cnf dest=/etc/my.cnf mode=0644
+  when: "ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'"
+
+- name: Configuring Database parameters
+  copy: src=6my.cnf dest=/etc/my.cnf mode=0644
+  when: "ansible_os_family == 'RedHat' and ansible_distribution_major_version == '6'"
+
+- name: Handling the services 
+  command: echo starting services
+  args:
+    warn: false
+  notify: 
+    - restart mariadb
+    - restart mysql
+
